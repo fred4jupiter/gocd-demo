@@ -1,2 +1,4 @@
 # gocd-demo
-GO Demo
+Thoughtworks GO CD Server with one agent. Includes sample pipelines.
+
+

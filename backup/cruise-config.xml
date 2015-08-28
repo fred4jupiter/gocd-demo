@@ -1,0 +1,364 @@
+<?xml version="1.0" encoding="utf-8"?>
+<cruise xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="cruise-config.xsd" schemaVersion="75">
+  <server artifactsdir="artifacts" commandRepositoryLocation="default" serverId="a1b19ba4-1d61-4bc3-b36b-d9d98efb2456" />
+  <pipelines group="Development">
+    <pipeline name="Shared_Services" template="Development">
+      <materials>
+        <git url="https://github.com/gocd-demo/services.git" />
+      </materials>
+    </pipeline>
+    <pipeline name="Consumer_Website" template="Development">
+      <materials>
+        <git url="https://github.com/gocd-demo/consumer.git" />
+        <pipeline pipelineName="Shared_Services" stageName="Package" />
+      </materials>
+    </pipeline>
+    <pipeline name="B2B_Website" template="Development">
+      <materials>
+        <git url="https://github.com/gocd-demo/b2b.git" />
+        <pipeline pipelineName="Shared_Services" stageName="Package" />
+      </materials>
+    </pipeline>
+    <pipeline name="jsf2-helloworld" isLocked="false">
+      <materials>
+        <git url="https://github.com/fred4jupiter/jsf2-helloworld.git" autoUpdate="false" />
+      </materials>
+      <stage name="BuildStage">
+        <approval type="manual" />
+        <jobs>
+          <job name="UnitTest">
+            <tasks>
+              <exec command="mvn">
+                <arg>clean</arg>
+                <arg>verify</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+  <pipelines group="Verification">
+    <pipeline name="Deploy_UAT" isLocked="true">
+      <materials>
+        <pipeline pipelineName="B2B_Website" stageName="Package" />
+        <pipeline pipelineName="Consumer_Website" stageName="Package" />
+        <pipeline pipelineName="Shared_Services" stageName="Package" />
+      </materials>
+      <stage name="Deploy_Applications">
+        <jobs>
+          <job name="deploy_b2b_website">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+          <job name="deploy_consumer_website">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+          <job name="deploy_shared_services">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Mark_Accepted">
+        <approval type="manual" />
+        <jobs>
+          <job name="mark_accepted">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is a manual stage that allows people to signal that they accept the current build</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="Automated_Tests" isLocked="true">
+      <materials>
+        <pipeline pipelineName="B2B_Website" stageName="Package" />
+        <pipeline pipelineName="Consumer_Website" stageName="Package" />
+        <pipeline pipelineName="Shared_Services" stageName="Package" />
+      </materials>
+      <stage name="Deploy_Applications">
+        <jobs>
+          <job name="deploy_b2b_website">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+          <job name="deploy_consumer_website">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+          <job name="deploy_shared_services">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Functional_Tests">
+        <jobs>
+          <job name="functional_suite_01">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This would run a suite of functional tests - you may have several of these in parallel</arg>
+                <runif status="passed" />
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="jsf2-helloworld-IT">
+      <materials>
+        <pipeline pipelineName="jsf2-helloworld" stageName="BuildStage" />
+        <git url="https://github.com/fred4jupiter/jsf2-helloworld.git" autoUpdate="false" />
+      </materials>
+      <stage name="IntegrationTestStage">
+        <jobs>
+          <job name="IntegrationJob">
+            <tasks>
+              <exec command="mvn">
+                <arg>clean</arg>
+                <arg>verify</arg>
+                <arg>-Pacceptance</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+  <pipelines group="Production">
+    <pipeline name="Production_Services">
+      <environmentvariables>
+        <variable name="APPLICATION">
+          <value>SERVICES</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <pipeline pipelineName="Deploy_UAT" stageName="Mark_Accepted" />
+        <pipeline pipelineName="Automated_Tests" stageName="Functional_Tests" />
+      </materials>
+      <stage name="Traffic_Light">
+        <jobs>
+          <job name="traffic_light">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This stage signals that a build is ready to be deployed to production</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Deploy_Application">
+        <approval type="manual" />
+        <jobs>
+          <job name="deploy_application">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Verify_Deployment">
+        <jobs>
+          <job name="verify">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would verify the deployment</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="Production_Consumer" isLocked="false">
+      <environmentvariables>
+        <variable name="APPLICATION">
+          <value>CONSUMER</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <pipeline pipelineName="Deploy_UAT" stageName="Mark_Accepted" />
+        <pipeline pipelineName="Automated_Tests" stageName="Functional_Tests" />
+      </materials>
+      <stage name="Traffic_Light">
+        <jobs>
+          <job name="traffic_light">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This stage signals that a build is ready to be deployed to production</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Deploy_Application">
+        <approval type="manual" />
+        <jobs>
+          <job name="deploy_application">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Verify_Deployment">
+        <jobs>
+          <job name="verify">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would verify the deployment</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="Production_B2B" isLocked="false">
+      <environmentvariables>
+        <variable name="APPLICATION">
+          <value>B2B</value>
+        </variable>
+      </environmentvariables>
+      <materials>
+        <pipeline pipelineName="Deploy_UAT" stageName="Mark_Accepted" />
+        <pipeline pipelineName="Automated_Tests" stageName="Functional_Tests" />
+      </materials>
+      <stage name="Traffic_Light">
+        <jobs>
+          <job name="traffic_light">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This stage signals that a build is ready to be deployed to production</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Deploy_Application">
+        <approval type="manual" />
+        <jobs>
+          <job name="deploy_application">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would run your deployment scripts</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Verify_Deployment">
+        <jobs>
+          <job name="verify">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>This is where you would verify the deployment</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+    <pipeline name="Production_jsf2-helloworld" isLocked="false">
+      <materials>
+        <pipeline pipelineName="jsf2-helloworld-IT" stageName="IntegrationTestStage" />
+      </materials>
+      <stage name="CheckStage">
+        <jobs>
+          <job name="CheckProductionDeployReady">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>Checking if production deployment is ready</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="DeployToProductionStage">
+        <approval type="manual" />
+        <jobs>
+          <job name="DeployToProduction">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>Deploying jsf2-helloworld to production...</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="AfterProdDeploymentStage">
+        <jobs>
+          <job name="CallWebPageAfterDepoyment">
+            <tasks>
+              <exec command="/bin/echo">
+                <arg>Checking if deployment was successfully...</arg>
+              </exec>
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </pipelines>
+  <templates>
+    <pipeline name="Development">
+      <stage name="Commit">
+        <jobs>
+          <job name="build">
+            <tasks>
+              <rake buildfile="Rakefile" target="build" />
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Unit_Test">
+        <jobs>
+          <job name="unit_test">
+            <tasks>
+              <rake buildfile="Rakefile" target="unit_test" />
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+      <stage name="Package">
+        <jobs>
+          <job name="package">
+            <tasks>
+              <rake buildfile="Rakefile" target="package" />
+            </tasks>
+          </job>
+        </jobs>
+      </stage>
+    </pipeline>
+  </templates>
+  <agents>
+    <agent hostname="vagrant-ubuntu-trusty-64" ipaddress="10.0.2.15" uuid="68e5d48c-753a-4395-a79c-1cb22d77a12f" />
+    <agent hostname="vagrant-ubuntu-trusty-64" ipaddress="10.0.2.15" uuid="964c760d-2803-4dac-a98e-6b3b2b682f3e" />
+    <agent hostname="vagrant-ubuntu-trusty-64" ipaddress="10.0.2.15" uuid="e61706c1-f0ee-4543-9a5d-6dd0984f17d5" />
+  </agents>
+</cruise>
+
